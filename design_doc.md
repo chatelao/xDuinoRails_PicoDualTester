@@ -65,6 +65,21 @@ The Pi Hat will be a custom PCB that provides the following features:
 *   LED indicators for power and status.
 *   Easy access to the Pico's GPIO pins for probing and debugging.
 
+### 2.3. Pico-to-Pico Wiring
+
+For direct communication tests, the two Picos will be interconnected. The following table details the GPIO mapping. Note the crossing of UART (TX/RX) and SPI (MISO/MOSI) lines to enable full-duplex communication.
+
+| Pico 1 Pin | Pico 1 Function | Pico 2 Pin | Pico 2 Function |
+| :--- | :--- | :--- | :--- |
+| GP0 | UART0 TX | GP1 | UART0 RX |
+| GP1 | UART0 RX | GP0 | UART0 TX |
+| GP2 | I2C1 SDA | GP2 | I2C1 SDA |
+| GP3 | I2C1 SCL | GP3 | I2C1 SCL |
+| GP4 | SPI0 SCK | GP4 | SPI0 SCK |
+| GP5 | SPI0 CS | GP5 | SPI0 CS |
+| GP6 | SPI0 MOSI | GP7 | SPI0 MISO |
+| GP7 | SPI0 MISO | GP6 | SPI0 MOSI |
+
 ## 3. Software Design
 
 ### 3.1. Raspberry Pi Software Stack
