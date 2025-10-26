@@ -55,15 +55,22 @@ The following diagram illustrates the wiring between the Raspberry Pi and the tw
 
 ### 2.2. Pi Hat Design
 
-The Pi Hat will be a custom PCB that provides the following features:
+The Pi Hat will be a custom PCB that provides the following features to create a flexible and powerful testing platform:
 
-*   A 40-pin GPIO header to connect to the Raspberry Pi.
-*   Two sockets for the Raspberry Pi Picos.
-*   **Programming Interface:** The hat will include circuitry to program the Picos using the Raspberry Pi's GPIO pins via the Serial Wire Debug (SWD) interface. This allows for a fully integrated programming and debugging solution without needing to physically connect/disconnect USB cables.
-*   Level shifters to ensure compatibility between the 3.3V logic of the Raspberry Pi and the Picos.
-*   Power management circuitry to provide stable power to the Picos.
-*   LED indicators for power and status.
-*   Easy access to the Pico's GPIO pins for probing and debugging.
+*   **Core Connectivity:**
+    *   A 40-pin GPIO header to connect to the Raspberry Pi.
+    *   Two sockets for the Raspberry Pi Picos.
+    *   **Programming Interface:** The hat will include circuitry to program the Picos using the Raspberry Pi's GPIO pins via the Serial Wire Debug (SWD) interface. This allows for a fully integrated programming and debugging solution.
+    *   Power management circuitry to provide stable power to the Picos.
+
+*   **Advanced Test & Debug Features:**
+    *   **Programmable Signal Routing:** Analog multiplexers (e.g., `74HC4053`) will be placed on the UART and SPI lines connecting the two Picos. These will be controlled by the Raspberry Pi, allowing the Picos to be programmatically isolated from each other for individual testing.
+    *   **Power Monitoring:** An `INA219` current-sensing IC will be included on the power rail for each Pico. These sensors will connect to the Raspberry Pi's I2C control bus, enabling real-time power consumption measurement, which is critical for verifying low-power modes and detecting fault conditions.
+    *   **Debugging Headers & Test Points:** The hat will feature 0.1" pin headers to break out the main communication buses (Pico-to-Pico UART, SPI, and I2C). Additionally, labeled test points will be provided for every GPIO pin, allowing for easy and clean connection of a logic analyzer or oscilloscope.
+
+*   **On-Board User Interface:**
+    *   **Headless Control:** Two pushbuttons will be connected to the Raspberry Pi's GPIOs to enable simple, headless control of common actions like "Reset Picos" or "Start Full Test Suite".
+    *   **Status Display:** A small I2C OLED screen (e.g., SSD1306) will provide key status information without needing a dedicated monitor, displaying the Pi's IP address, the currently running test, or pass/fail results.
 
 ### 2.3. Pico-to-Pico Wiring
 
@@ -79,18 +86,18 @@ For direct communication tests, the two Picos are interconnected. The I2C0 perip
 | GP5 | UART1 RX | GP4 | UART1 TX | UART1 Crossover |
 | GP6  | GPIO | GP6  | GPIO | Direct Connection |
 | GP7  | GPIO | GP7  | GPIO | Direct Connection |
-| GP8  | SPI1 RX (MISO) | GP11 | SPI1 TX (MOSI) | SPI1 Crossover |
+| GP8  | SPI1 RX (MISO) | GP8  | SPI1 RX (MISO) | SPI1 MISO |
 | GP9  | SPI1 CSn | GP26 | GPIO / ADC0 | SPI1 Chip Select (Pico 2 as Master) |
 | GP10 | SPI1 SCK | GP10 | SPI1 SCK | SPI1 Clock |
-| GP11 | SPI1 TX (MOSI) | GP8  | SPI1 RX (MISO) | SPI1 Crossover |
+| GP11 | SPI1 TX (MOSI) | GP11 | SPI1 TX (MOSI) | SPI1 MOSI |
 | GP12 | GPIO | GP12 | GPIO | Direct Connection |
 | GP13 | GPIO | GP13 | GPIO | Direct Connection |
 | GP14 | GPIO | GP14 | GPIO | Direct Connection |
 | GP15 | GPIO | GP15 | GPIO | Direct Connection |
-| GP16 | SPI0 RX (MISO) | GP19 | SPI0 TX (MOSI) | SPI0 Crossover |
+| GP16 | SPI0 RX (MISO) | GP16 | SPI0 RX (MISO) | SPI0 MISO |
 | GP17 | SPI0 CSn | GP22 | GPIO | SPI0 Chip Select (Pico 2 as Master) |
 | GP18 | SPI0 SCK | GP18 | SPI0 SCK | SPI0 Clock |
-| GP19 | SPI0 TX (MOSI) | GP16 | SPI0 RX (MISO) | SPI0 Crossover |
+| GP19 | SPI0 TX (MOSI) | GP19 | SPI0 TX (MOSI) | SPI0 MOSI |
 | GP20 | I2C0 SDA | NC   | Not Connected | Reserved for RPi Control Bus |
 | GP21 | I2C0 SCL | NC   | Not Connected | Reserved for RPi Control Bus |
 | GP22 | GPIO | GP17 | SPI0 CSn | SPI0 Chip Select (Pico 1 as Master) |
@@ -107,25 +114,32 @@ The Raspberry Pi controller connects to both Pico DUTs for SWD programming and I
 
 | Raspberry Pi Pin | Function | Pico 1 Pin | Pico 1 Function | Pico 2 Pin | Pico 2 Function | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Pico Control & Programming** | | | | | | |
 | 11 (GPIO17) | GPIO | RUN | RUN | - | - | Pico 1 Reset |
 | 26 (GPIO7) | GPIO | - | - | RUN | RUN | Pico 2 Reset |
 | 15 (GPIO22) | GPIO | SWCLK | SWCLK | - | - | Pico 1 SWD Clock |
 | 16 (GPIO23) | GPIO | SWDIO | SWDIO | - | - | Pico 1 SWD Data |
 | 18 (GPIO24) | GPIO | - | - | SWCLK | SWCLK | Pico 2 SWD Clock |
 | 22 (GPIO25) | GPIO | - | - | SWDIO | SWDIO | Pico 2 SWD Data |
-| 3 (GPIO2) | I2C1 SDA | GP20 | I2C0 SDA | GP20 | I2C0 SDA | RPi to Picos Control Bus |
-| 5 (GPIO3) | I2C1 SCL | GP21 | I2C0 SCL | GP21 | I2C0 SCL | RPi to Picos Control Bus |
-| 8 (GPIO14) | UART0 TX | GP0 | UART0 TX | - | - | RPi to Pico 1 Data |
-| 10 (GPIO15)| UART0 RX | GP1 | UART0 RX | - | - | Pico 1 to RPi Data |
+| **Data & Control Bus** | | | | | | |
+| 3 (GPIO2) | I2C1 SDA | GP20 | I2C0 SDA | GP20 | I2C0 SDA | RPi to Picos Control Bus (also for INA219, OLED) |
+| 5 (GPIO3) | I2C1 SCL | GP21 | I2C0 SCL | GP21 | I2C0 SCL | RPi to Picos Control Bus (also for INA219, OLED) |
+| 8 (GPIO14) | UART0 TX | GP0 | UART0 TX | - | - | RPi to Pico 1 Data Download |
+| 10 (GPIO15)| UART0 RX | GP1 | UART0 RX | - | - | Pico 1 to RPi Data Download |
+| **On-Hat Component Control** | | | | | | |
+| 7 (GPIO4) | GPIO | - | - | - | - | Multiplexer Control 0 |
+| 12 (GPIO18)| GPIO | - | - | - | - | Multiplexer Control 1 |
+| 13 (GPIO27)| GPIO | - | - | - | - | Pushbutton 1 |
+| 19 (GPIO10)| GPIO | - | - | - | - | Pushbutton 2 |
 
 ### 2.5. Available GPIOs for Status LEDs
 
-After accounting for all the necessary connections for SWD, I2C, UART, and Reset signals, there are several GPIO pins still available on the Raspberry Pi's 26-pin header. These can be used for status indicators.
+After accounting for all the necessary connections for SWD, the control bus, data transfer, and on-hat components, there are still GPIO pins available on the Raspberry Pi's 26-pin header for status LEDs.
 
-*   **Available Pins:** 7 (GPIO4), 12 (GPIO18), 13 (GPIO21/GPIO27), 19 (GPIO10), 21 (GPIO9), 23 (GPIO11), 24 (GPIO8).
-*   **Total Available:** 7 GPIO pins.
+*   **Available Pins:** 21 (GPIO9), 23 (GPIO11), 24 (GPIO8).
+*   **Total Available:** 3 GPIO pins.
 
-These pins can be connected to LEDs through current-limiting resistors to provide visual feedback on the status of the test environment, such as "Pico 1 Powered On," "Pico 2 Flashing," "Test in Progress," or "Test Complete."
+These pins can be connected to LEDs through current-limiting resistors to provide visual feedback on the status of the test environment, such as "Test in Progress," "Test Passed," or "Test Failed."
 
 ## 3. Software Design
 
@@ -214,17 +228,22 @@ In this mode, each Pico will monitor its own internal state, such as CPU usage, 
 
 | Item | Quantity | Estimated Price (USD) | Notes |
 | :--- | :--- | :--- | :--- |
+| **Core Components** | | | |
 | Raspberry Pi 4 (4GB) | 1 | $55.00 | Controller |
 | Raspberry Pi Pico | 2 | $8.00 ($4.00 each) | Devices Under Test (DUTs) |
 | Custom Pi Hat PCB | 1 | $20.00 | Price can vary based on manufacturer and quantity |
+| **Hat Components** | | | |
 | 40-pin GPIO Header | 1 | $1.50 | |
 | Pico Sockets | 2 | $2.00 ($1.00 each) | |
-| Level Shifters (e.g., TXS0108E) | 2 | $4.00 ($2.00 each) | For safe 3.3V to 5V logic level conversion |
+| Analog Multiplexer (74HC4053) | 2 | $3.00 ($1.50 each) | For programmable signal routing |
+| Power Monitor IC (INA219) | 2 | $8.00 ($4.00 each) | For Pico power measurement |
+| 0.96" I2C OLED Screen (SSD1306) | 1 | $8.00 | For status display |
+| Pushbuttons | 2 | $1.00 ($0.50 each) | For headless control |
+| Debug Headers (2x10) | 2 | $2.00 ($1.00 each) | For logic analyzer access |
 | Power Management IC (e.g., AP2210) | 1 | $2.00 | |
-| LEDs | 4 | $0.50 | Status indicators |
 | Resistors (assorted) | 1 pack | $5.00 | Pull-ups, current-limiting, etc. |
 | Capacitors (assorted) | 1 pack | $5.00 | Decoupling, filtering, etc. |
-| **Total Estimated Cost** | | **$103.00** | |
+| **Total Estimated Cost** | | **$120.50** | |
 
 ## 7. Future Improvements
 
