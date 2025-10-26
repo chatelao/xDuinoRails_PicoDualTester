@@ -67,18 +67,54 @@ The Pi Hat will be a custom PCB that provides the following features:
 
 ### 2.3. Pico-to-Pico Wiring
 
-For direct communication tests, the two Picos will be interconnected. The following table details the GPIO mapping. Note the crossing of UART (TX/RX) and SPI (MISO/MOSI) lines to enable full-duplex communication.
+For direct communication tests, the two Picos are interconnected. The I2C0 peripheral on both Picos is reserved for the control bus with the Raspberry Pi, making it unavailable for Pico-to-Pico testing. All other peripherals, including both UARTs and both SPIs, are available for inter-Pico testing. For SPI, a master-slave configuration is required. To allow either Pico to act as master, a dedicated GPIO on the master is wired to the Chip Select (CSn) pin on the slave.
 
-| Pico 1 Pin | Pico 1 Function | Pico 2 Pin | Pico 2 Function |
-| :--- | :--- | :--- | :--- |
-| GP0 | UART0 TX | GP1 | UART0 RX |
-| GP1 | UART0 RX | GP0 | UART0 TX |
-| GP2 | I2C1 SDA | GP2 | I2C1 SDA |
-| GP3 | I2C1 SCL | GP3 | I2C1 SCL |
-| GP4 | SPI0 SCK | GP4 | SPI0 SCK |
-| GP5 | SPI0 CS | GP5 | SPI0 CS |
-| GP6 | SPI0 MOSI | GP7 | SPI0 MISO |
-| GP7 | SPI0 MISO | GP6 | SPI0 MOSI |
+| Pico 1 Pin | Pico 1 Function | Pico 2 Pin | Pico 2 Function | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| GP0 | UART0 TX | GP1 | UART0 RX | UART0 Crossover |
+| GP1 | UART0 RX | GP0 | UART0 TX | UART0 Crossover |
+| GP2 | I2C1 SDA | GP2 | I2C1 SDA | I2C1 Bus |
+| GP3 | I2C1 SCL | GP3 | I2C1 SCL | I2C1 Bus |
+| GP4 | UART1 TX | GP5 | UART1 RX | UART1 Crossover |
+| GP5 | UART1 RX | GP4 | UART1 TX | UART1 Crossover |
+| GP6  | GPIO | GP6  | GPIO | Direct Connection |
+| GP7  | GPIO | GP7  | GPIO | Direct Connection |
+| GP8  | SPI1 RX (MISO) | GP11 | SPI1 TX (MOSI) | SPI1 Crossover |
+| GP9  | SPI1 CSn | GP26 | GPIO / ADC0 | SPI1 Chip Select (Pico 2 as Master) |
+| GP10 | SPI1 SCK | GP10 | SPI1 SCK | SPI1 Clock |
+| GP11 | SPI1 TX (MOSI) | GP8  | SPI1 RX (MISO) | SPI1 Crossover |
+| GP12 | GPIO | GP12 | GPIO | Direct Connection |
+| GP13 | GPIO | GP13 | GPIO | Direct Connection |
+| GP14 | GPIO | GP14 | GPIO | Direct Connection |
+| GP15 | GPIO | GP15 | GPIO | Direct Connection |
+| GP16 | SPI0 RX (MISO) | GP19 | SPI0 TX (MOSI) | SPI0 Crossover |
+| GP17 | SPI0 CSn | GP22 | GPIO | SPI0 Chip Select (Pico 2 as Master) |
+| GP18 | SPI0 SCK | GP18 | SPI0 SCK | SPI0 Clock |
+| GP19 | SPI0 TX (MOSI) | GP16 | SPI0 RX (MISO) | SPI0 Crossover |
+| GP20 | I2C0 SDA | NC   | Not Connected | Reserved for RPi Control Bus |
+| GP21 | I2C0 SCL | NC   | Not Connected | Reserved for RPi Control Bus |
+| GP22 | GPIO | GP17 | SPI0 CSn | SPI0 Chip Select (Pico 1 as Master) |
+| GP23 | GPIO / SMPS PS | GP23 | GPIO / SMPS PS | Direct Connection |
+| GP24 | GPIO / VBUS Sense| GP24 | GPIO / VBUS Sense| Direct Connection |
+| GP25 | GPIO / LED | GP25 | GPIO / LED | Direct Connection |
+| GP26 | GPIO / ADC0 | GP9  | SPI1 CSn | SPI1 Chip Select (Pico 1 as Master) |
+| GP27 | GPIO / ADC1 | GP27 | GPIO / ADC1 | Direct Connection |
+| GP28 | GPIO / ADC2 | GP28 | GPIO / ADC2 | Direct Connection |
+
+### 2.4. Raspberry Pi to Picos Wiring
+
+The Raspberry Pi controller connects to both Pico DUTs for SWD programming and I2C communication. This wiring scheme is compatible with the original 26-pin Raspberry Pi header and avoids conflicts with the Pico-to-Pico test wiring.
+
+| Raspberry Pi Pin | Function | Pico 1 Pin | Pico 1 Function | Pico 2 Pin | Pico 2 Function | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 11 (GPIO17) | GPIO | RUN | RUN | - | - | Pico 1 Reset |
+| 13 (GPIO27) | GPIO | - | - | RUN | RUN | Pico 2 Reset |
+| 15 (GPIO22) | GPIO | SWCLK | SWCLK | - | - | Pico 1 SWD Clock |
+| 16 (GPIO23) | GPIO | SWDIO | SWDIO | - | - | Pico 1 SWD Data |
+| 18 (GPIO24) | GPIO | - | - | SWCLK | SWCLK | Pico 2 SWD Clock |
+| 22 (GPIO25) | GPIO | - | - | SWDIO | SWDIO | Pico 2 SWD Data |
+| 3 (GPIO2) | I2C1 SDA | GP20 | I2C0 SDA | GP20 | I2C0 SDA | RPi to Picos Control Bus |
+| 5 (GPIO3) | I2C1 SCL | GP21 | I2C0 SCL | GP21 | I2C0 SCL | RPi to Picos Control Bus |
 
 ## 3. Software Design
 
